@@ -14,12 +14,18 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+
+      - name: Validate portfolio integrity and privacy
+        run: python tools/validate_portfolio.py
+
       - name: Compile prototype
         run: python -m py_compile prototype/devwork_core.py prototype/test_devwork_core.py
+
       - name: Run behaviour tests
         working-directory: prototype
         run: python -m unittest -v test_devwork_core.py
