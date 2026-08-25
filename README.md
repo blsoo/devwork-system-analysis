@@ -32,6 +32,7 @@ Requirements
 |---|---|
 | [`REQUIREMENTS.md`](REQUIREMENTS.md) | functional/non-functional requirements + acceptance criteria |
 | [`USE_CASES.md`](USE_CASES.md) | main and alternative system flows |
+| [`CHANGE_REQUEST_EXAMPLE.md`](CHANGE_REQUEST_EXAMPLE.md) | vague product request -> clarification -> model/API/test impact |
 | [`BUSINESS_RULES.md`](BUSINESS_RULES.md) | explicit domain rules and invariants |
 | [`ARCHITECTURE.md`](ARCHITECTURE.md) | application boundaries and AI/write-safety boundary |
 | [`DIAGRAMS.md`](DIAGRAMS.md) | system context, ERD, sequence, state machine and process flows |
@@ -79,6 +80,8 @@ The foreign keys carry relationships; queries and `JOIN`s use those relationship
 ## What this demonstrates
 
 - requirements decomposition and acceptance criteria;
+- clarification of ambiguous product requests;
+- change-impact analysis across data, API and tests;
 - domain modelling and PK/FK relationships;
 - REST/API contract design;
 - OpenAPI documentation;
@@ -116,7 +119,13 @@ A reviewer can pick almost any layer and walk through it:
 5. Check the proposal and task tables in the SQL schema.
 6. Verify behaviour in `TC-04 / TC-05` and the Python unit tests.
 
+Or start from the recurring-task change request and explain why identity, history, timezone, retries and scheduler idempotency must be clarified before implementation.
+
 That is the main point of the repository: **the system can be explained from requirement to behaviour, not only from code**.
+
+## Related portfolio case
+
+- [BullADM — safe operational automation](https://github.com/blsoo/bulladm-ops-automation)
 
 ## Current scope
 
