@@ -26,6 +26,7 @@ REQUIRED = [
     "DECISIONS.md",
     "INTERVIEW_GUIDE.md",
     "DEMO.md",
+    "ROADMAP.md",
     "prototype/devwork_core.py",
     "prototype/test_devwork_core.py",
     "prototype/schema.sql",
