@@ -1,0 +1,273 @@
+openapi: 3.1.0
+info:
+  title: DevWork Public Portfolio API
+  version: 0.1.0
+  description: >-
+    Public-safe contract draft for DevWork. The API exposes read operations,
+    explainable daily planning and two-step confirmation-gated mutations.
+servers:
+  - url: https://example.invalid/api
+    description: Documentation placeholder only
+paths:
+  /projects/{project_id}:
+    get:
+      summary: Get project summary
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+      responses:
+        '200':
+          description: Project summary
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectSummary'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /projects/{project_id}/tasks:
+    get:
+      summary: List project tasks
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/TaskStatus'
+      responses:
+        '200':
+          description: Task list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Task'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /projects/{project_id}/today:
+    get:
+      summary: Get deterministic daily plan
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+      responses:
+        '200':
+          description: Ranked actionable tasks with explanations
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DailyPlan'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /actions/proposals:
+    post:
+      summary: Create a mutation proposal without changing state
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateProposalRequest'
+      responses:
+        '201':
+          description: Proposal created; target state is unchanged
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionProposal'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/DomainViolation'
+
+  /actions/proposals/{proposal_id}/confirm:
+    post:
+      summary: Confirm and apply the exact stored proposal
+      parameters:
+        - name: proposal_id
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+      responses:
+        '200':
+          description: Proposal applied or stable already-applied result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConfirmationResult'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/DomainViolation'
+
+components:
+  parameters:
+    ProjectId:
+      name: project_id
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+
+  schemas:
+    TaskStatus:
+      type: string
+      enum: [todo, doing, blocked, done]
+
+    ProjectSummary:
+      type: object
+      required: [id, name, goal, status, progress]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        goal:
+          type: string
+        specification_summary:
+          type: string
+        status:
+          type: string
+        active_stage_id:
+          type: [integer, 'null']
+        progress:
+          type: number
+          minimum: 0
+          maximum: 100
+
+    Task:
+      type: object
+      required: [id, project_id, title, status, priority]
+      properties:
+        id:
+          type: integer
+        project_id:
+          type: integer
+        stage_id:
+          type: [integer, 'null']
+        title:
+          type: string
+        status:
+          $ref: '#/components/schemas/TaskStatus'
+        priority:
+          type: integer
+        deadline:
+          type: [string, 'null']
+          format: date-time
+
+    DailyPlan:
+      type: object
+      required: [date, items]
+      properties:
+        date:
+          type: string
+          format: date
+        items:
+          type: array
+          items:
+            type: object
+            required: [task_id, title, score, reasons]
+            properties:
+              task_id:
+                type: integer
+              title:
+                type: string
+              score:
+                type: number
+              reasons:
+                type: array
+                minItems: 1
+                items:
+                  type: string
+
+    CreateProposalRequest:
+      type: object
+      required: [intent, payload]
+      properties:
+        intent:
+          type: string
+          enum: [complete_task]
+        payload:
+          type: object
+          required: [task_id]
+          properties:
+            task_id:
+              type: integer
+              minimum: 1
+
+    ActionProposal:
+      type: object
+      required: [proposal_id, preview, status, expires_at]
+      properties:
+        proposal_id:
+          type: string
+        preview:
+          type: string
+        status:
+          type: string
+          enum: [pending]
+        expires_at:
+          type: string
+          format: date-time
+
+    ConfirmationResult:
+      type: object
+      required: [proposal_id, status, applied]
+      properties:
+        proposal_id:
+          type: string
+        status:
+          type: string
+          enum: [applied, already_applied]
+        applied:
+          type: boolean
+        target_task_id:
+          type: integer
+
+    ErrorEnvelope:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+
+  responses:
+    BadRequest:
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    NotFound:
+      description: Entity not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    Conflict:
+      description: Invalid state transition or stale proposal
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    DomainViolation:
+      description: Understood request that violates a domain rule
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
